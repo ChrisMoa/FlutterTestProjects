@@ -1,10 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
-import 'dart:convert';
 import 'dart:io';
-
-import 'package:crypto/crypto.dart';
-import 'package:encrypt/encrypt.dart' as enc;
+import 'package:aes_test_1/aes_encryptor.dart';
 import 'package:filesystem_picker/filesystem_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -40,14 +37,13 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   bool _asyncRead = false; //! a bool that states if the async is already read
-  final _sharedPreferenceStorage =
-      const FlutterSecureStorage(); //! the secure storage
-  Map<String, String> _storageContent = {}; //! contains the
-  late enc.IV _iv; //! the iv for aes encryption
-  late enc.Encrypter _encrypter; //! the aes encryption module
+  final _sharedPreferenceStorage = const FlutterSecureStorage(); //! the secure storage
+  Map<String, String> _storageContent = {}; //! contains a global map of all stored parameters
   late Directory _rootDirectory; //! the root directory of the dialog
-  final String _tmpPW = '1234'; //! the tmp password
+  late AesEncryptor _aesEncryptor; //! the aes encryption module
+  final String _examplePW = '1234'; //! this is only an example password, should be applied in testing purposes
 
+  //* WidgetBase -------------------------------------------------------------------------------------------------------------------------------------
   @override
   void initState() {
     _onInitAsync();
@@ -55,8 +51,8 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   @override
-  void dispose() {
-    _onDisposeAsync();
+  void dispose() async {
+    await _onDisposeAsync();
     super.dispose();
   }
 
@@ -88,11 +84,19 @@ class _MyHomePageState extends State<MyHomePage> {
               children: [
                 TextButton(
                   onPressed: _onEncryptClicked,
-                  child: const Text('encrypt'),
+                  child: const Text('encrypt File'),
                 ),
                 TextButton(
                   onPressed: _onDecryptClicked,
-                  child: const Text('decrypt'),
+                  child: const Text('decrypt File'),
+                ),
+                TextButton(
+                  onPressed: _onEncryptFolderClicked,
+                  child: const Text('encrypt Folder'),
+                ),
+                TextButton(
+                  onPressed: _onDecryptFolderClicked,
+                  child: const Text('decrypt Folder'),
                 ),
               ],
             ),
@@ -116,22 +120,26 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  //* builds -----------------------------------------------------------------------------------------------------------------------------------------
+
+  //* callbacks --------------------------------------------------------------------------------------------------------------------------------------
+
   void _onInitAsync() async {
     _storageContent = await _sharedPreferenceStorage.readAll();
     _rootDirectory = await getApplicationDocumentsDirectory();
-
-    if (!_storageContent.containsKey('key')) {
-      print('create new ciphers');
-      _storageContent['key'] = enc.Key.fromLength(32).base64;
-      _storageContent['iv'] = enc.IV.fromSecureRandom(16).base64;
-      await _sharedPreferenceStorage.write(
-          key: 'key', value: _storageContent['key']);
-      await _sharedPreferenceStorage.write(
-          key: 'iv', value: _storageContent['iv']);
+    if (!_storageContent.containsKey('password') || !_storageContent.containsKey('iv')) {
+      print('creates new aesEncryptor');
+      _aesEncryptor = AesEncryptor(password: _examplePW);
+      _storageContent['password'] = _aesEncryptor.password;
+      _storageContent['iv'] = _aesEncryptor.iv;
+      await _writeToSecureStorage();
+    } else {
+      print('aesEncryptor uses credentials from secure storage');
+      _aesEncryptor = AesEncryptor(
+        password: _storageContent['password']!,
+        ivAsBase64: _storageContent['iv'],
+      );
     }
-    var key = enc.Key.fromBase64(_storageContent['key']!);
-    _iv = enc.IV.fromBase64(_storageContent['iv']!);
-    _encrypter = enc.Encrypter(enc.AES(key, mode: enc.AESMode.cbc));
 
     // finish async reading
     setState(() {
@@ -139,7 +147,11 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  void _onDisposeAsync() async {
+  Future<void> _onDisposeAsync() async {
+    await _writeToSecureStorage();
+  }
+
+  Future<void> _writeToSecureStorage() async {
     for (var entry in _storageContent.entries) {
       await _sharedPreferenceStorage.write(key: entry.key, value: entry.value);
     }
@@ -160,9 +172,8 @@ class _MyHomePageState extends State<MyHomePage> {
       return;
     }
     try {
-      File file = File(path);
-      file.writeAsBytesSync(
-          _encrypter.encryptBytes(file.readAsBytesSync(), iv: _iv).bytes);
+      _aesEncryptor.encryptFile(File(path));
+      print('encrypted "$path"');
     } catch (e) {
       print('Error encrypting "$path": "$e"');
     }
@@ -183,10 +194,7 @@ class _MyHomePageState extends State<MyHomePage> {
       return;
     }
     try {
-      File file = File(path);
-
-      file.writeAsBytesSync(_encrypter
-          .decryptBytes(enc.Encrypted(file.readAsBytesSync()), iv: _iv));
+      _aesEncryptor.decryptFile(File(path));
     } catch (e) {
       print('Error decrypting "$path": "$e"');
     }
@@ -207,11 +215,7 @@ class _MyHomePageState extends State<MyHomePage> {
       return;
     }
     try {
-      File file = File('$path/key.json');
-      Map<String, String> map = {};
-      map['key'] = _storageContent['key']!;
-      map['iv'] = _storageContent['iv']!;
-      file.writeAsStringSync(jsonEncode(map));
+      _aesEncryptor.saveToKeyFile(File('$path/key.json'));
       print('exported key');
     } catch (e) {
       print('Error writing "$path": "$e"');
@@ -233,19 +237,55 @@ class _MyHomePageState extends State<MyHomePage> {
       return;
     }
     try {
-      File file = File(path);
-      var map = jsonDecode(file.readAsStringSync());
-      for (var entry in map.entries) {
-        _storageContent.update(entry.key, (value) => entry.value);
-        await _sharedPreferenceStorage.write(
-            key: entry.key, value: entry.value);
-      }
-      var key = enc.Key.fromBase64(_storageContent['key']!);
-      _iv = enc.IV.fromBase64(_storageContent['iv']!);
-      _encrypter = enc.Encrypter(enc.AES(key, mode: enc.AESMode.cbc));
+      _aesEncryptor = AesEncryptor.loadFromKeyFile(File(path));
+      _storageContent['password'] = _aesEncryptor.password;
+      _storageContent['iv'] = _aesEncryptor.iv;
+      await _writeToSecureStorage();
       print('imported key');
     } catch (e) {
       print('Error importing "$path": "$e"');
+    }
+  }
+
+  void _onEncryptFolderClicked() async {
+    String? path = await FilesystemPicker.openDialog(
+      title: 'Open file that should be encrypted',
+      context: context,
+      fsType: FilesystemType.folder,
+      rootDirectory: _rootDirectory,
+      fileTileSelectMode: FileTileSelectMode.wholeTile,
+      contextActions: [
+        FilesystemPickerNewFolderContextAction(),
+      ],
+    );
+    if (path == null) {
+      return;
+    }
+    try {
+      _aesEncryptor.encryptFolder(Directory(path), false);
+    } catch (e) {
+      print('Error encrypting "$path": "$e"');
+    }
+  }
+
+  void _onDecryptFolderClicked() async {
+    String? path = await FilesystemPicker.openDialog(
+      title: 'Open file that should be decrypted',
+      context: context,
+      fsType: FilesystemType.folder,
+      rootDirectory: _rootDirectory,
+      fileTileSelectMode: FileTileSelectMode.wholeTile,
+      contextActions: [
+        FilesystemPickerNewFolderContextAction(),
+      ],
+    );
+    if (path == null) {
+      return;
+    }
+    try {
+      _aesEncryptor.decryptFolder(Directory(path), false);
+    } catch (e) {
+      print('Error decrypting "$path": "$e"');
     }
   }
 }
