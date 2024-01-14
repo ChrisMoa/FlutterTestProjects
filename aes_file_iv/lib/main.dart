@@ -1,7 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:io';
-import 'package:aes_test_1/aes_encryptor.dart';
+import 'package:aes_file_iv/aes_encryptor.dart';
 import 'package:filesystem_picker/filesystem_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(title: 'aes file iv'),
     );
   }
 }
@@ -37,14 +37,11 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   bool _asyncRead = false; //! a bool that states if the async is already read
-  final _sharedPreferenceStorage =
-      const FlutterSecureStorage(); //! the secure storage
-  Map<String, String> _storageContent =
-      {}; //! contains a global map of all stored parameters
+  final _sharedPreferenceStorage = const FlutterSecureStorage(); //! the secure storage
+  Map<String, String> _storageContent = {}; //! contains a global map of all stored parameters
   late Directory _rootDirectory; //! the root directory of the dialog
   late AesEncryptor _aesEncryptor; //! the aes encryption module
-  final String _examplePW =
-      '1234'; //! this is only an example password, should be applied in testing purposes
+  final String _examplePW = '1234'; //! this is only an example password, should be applied in testing purposes
 
   //* WidgetBase -------------------------------------------------------------------------------------------------------------------------------------
   @override
@@ -103,20 +100,6 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ],
             ),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TextButton(
-                  onPressed: _onExportKeyClicked,
-                  child: const Text('export Key'),
-                ),
-                TextButton(
-                  onPressed: _onImportKeyClicked,
-                  child: const Text('import Key'),
-                ),
-              ],
-            ),
           ],
         ),
       ),
@@ -130,18 +113,14 @@ class _MyHomePageState extends State<MyHomePage> {
   void _onInitAsync() async {
     _storageContent = await _sharedPreferenceStorage.readAll();
     _rootDirectory = await getApplicationDocumentsDirectory();
-    if (!_storageContent.containsKey('password') ||
-        !_storageContent.containsKey('iv')) {
+    if (!_storageContent.containsKey('password') || !_storageContent.containsKey('iv')) {
       print('creates new aesEncryptor');
       _aesEncryptor = AesEncryptor(password: _examplePW);
-      _storageContent['password'] = _aesEncryptor.password;
-      _storageContent['iv'] = _aesEncryptor.iv;
       await _writeToSecureStorage();
     } else {
       print('aesEncryptor uses credentials from secure storage');
       _aesEncryptor = AesEncryptor(
-        password: _storageContent['password']!,
-        ivAsBase64: _storageContent['iv'],
+        password: _examplePW,
       );
     }
 
@@ -204,53 +183,6 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  void _onExportKeyClicked() async {
-    String? path = await FilesystemPicker.openDialog(
-      title: 'where should the keyfile be saved?',
-      context: context,
-      fsType: FilesystemType.folder,
-      rootDirectory: _rootDirectory,
-      fileTileSelectMode: FileTileSelectMode.wholeTile,
-      contextActions: [
-        FilesystemPickerNewFolderContextAction(),
-      ],
-    );
-    if (path == null) {
-      return;
-    }
-    try {
-      _aesEncryptor.saveToKeyFile(File('$path/key.json'));
-      print('exported key');
-    } catch (e) {
-      print('Error writing "$path": "$e"');
-    }
-  }
-
-  void _onImportKeyClicked() async {
-    String? path = await FilesystemPicker.openDialog(
-      title: 'where should the keyfile be saved?',
-      context: context,
-      fsType: FilesystemType.file,
-      rootDirectory: _rootDirectory,
-      fileTileSelectMode: FileTileSelectMode.wholeTile,
-      contextActions: [
-        FilesystemPickerNewFolderContextAction(),
-      ],
-    );
-    if (path == null) {
-      return;
-    }
-    try {
-      _aesEncryptor = AesEncryptor.loadFromKeyFile(File(path));
-      _storageContent['password'] = _aesEncryptor.password;
-      _storageContent['iv'] = _aesEncryptor.iv;
-      await _writeToSecureStorage();
-      print('imported key');
-    } catch (e) {
-      print('Error importing "$path": "$e"');
-    }
-  }
-
   void _onEncryptFolderClicked() async {
     String? path = await FilesystemPicker.openDialog(
       title: 'Open file that should be encrypted',
@@ -266,7 +198,7 @@ class _MyHomePageState extends State<MyHomePage> {
       return;
     }
     try {
-      _aesEncryptor.encryptFolder(Directory(path), false);
+      _aesEncryptor.encryptFolder(Directory(path), true);
     } catch (e) {
       print('Error encrypting "$path": "$e"');
     }
@@ -287,7 +219,7 @@ class _MyHomePageState extends State<MyHomePage> {
       return;
     }
     try {
-      _aesEncryptor.decryptFolder(Directory(path), false);
+      _aesEncryptor.decryptFolder(Directory(path), true);
     } catch (e) {
       print('Error decrypting "$path": "$e"');
     }
