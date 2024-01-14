@@ -11,6 +11,7 @@ class AesEncryptor {
   AesEncryptor({required this.password}) {
     _key = Key.fromBase64(base64Encode(sha256.convert(utf8.encode(password)).bytes));
     _encrypter = Encrypter(AES(_key, mode: _aesMode));
+    _stringDefaultIV = IV.fromBase64("Test");
   }
 
   //* public methods ---------------------------------------------------------------------------------------------------------------------------------
@@ -19,14 +20,28 @@ class AesEncryptor {
   /// [plainText] the plainText that should be encrypted
   /// [return] the encrypted cipherText as byte array
   Uint8List encryptString(String plainText) {
-    return _encrypter.encrypt(plainText).bytes;
+    return _encrypter.encrypt(plainText, iv: _stringDefaultIV).bytes;
+  }
+
+  /// encrypts the given plain text
+  /// [plainText] the plainText that should be encrypted
+  /// [return] the encrypted cipherText as base64String
+  String encryptStringAsBase64(String plainText) {
+    return base64.encode(encryptString(plainText));
   }
 
   /// decrypts the given plain ciptherText
   /// [cipherText] the cipherText that should be decrypted as byte array
   /// [return] the decrypted plainText as String
   String decryptString(Uint8List cipherText) {
-    return _encrypter.decrypt(Encrypted(cipherText));
+    return _encrypter.decrypt(Encrypted(cipherText), iv: _stringDefaultIV);
+  }
+
+  /// decrypts the given plain ciptherText
+  /// [cipherText] the cipherText that should be decrypted as byte array
+  /// [return] the decrypted plainText as String
+  String decryptStringFromBase64(String cipherText) {
+    return _encrypter.decrypt(Encrypted(base64.decode(cipherText)), iv: _stringDefaultIV);
   }
 
   /// encrypts the given file
@@ -99,4 +114,5 @@ class AesEncryptor {
   late Key _key; //! the key for aes encryption
   late Encrypter _encrypter; //! the aes encryption module
   final _aesMode = AESMode.ctr; //! the aes encryption mode
+  late IV _stringDefaultIV; //! the default iv for string encryption
 }

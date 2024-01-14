@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:convert';
 import 'dart:io';
 import 'package:aes_file_iv/aes_encryptor.dart';
 import 'package:filesystem_picker/filesystem_picker.dart';
@@ -43,6 +44,10 @@ class _MyHomePageState extends State<MyHomePage> {
   late AesEncryptor _aesEncryptor; //! the aes encryption module
   final String _examplePW = '1234'; //! this is only an example password, should be applied in testing purposes
 
+  TextEditingController _inputController = TextEditingController();
+  TextEditingController _outputController = TextEditingController();
+  bool _isEncryptMode = true;
+
   //* WidgetBase -------------------------------------------------------------------------------------------------------------------------------------
   @override
   void initState() {
@@ -75,11 +80,7 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              'Press the button',
-            ),
             Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 TextButton(
@@ -99,6 +100,36 @@ class _MyHomePageState extends State<MyHomePage> {
                   child: const Text('decrypt Folder'),
                 ),
               ],
+            ),
+            const SizedBox(
+              height: 20,
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: TextField(
+                    controller: _inputController,
+                    decoration: const InputDecoration(labelText: 'Enter Text'),
+                  ),
+                ),
+                const Spacer(
+                  flex: 1,
+                ),
+                Expanded(
+                  flex: 3,
+                  child: TextField(
+                    controller: _outputController,
+                    decoration: InputDecoration(labelText: _isEncryptMode ? 'Cipher Text' : 'Decrypted Text'),
+                    readOnly: true,
+                  ),
+                ),
+              ],
+            ),
+            ElevatedButton(
+              onPressed: _toggleEncryptionMode,
+              child: Text(_isEncryptMode ? 'Encrypt' : 'Decrypt'),
             ),
           ],
         ),
@@ -223,5 +254,18 @@ class _MyHomePageState extends State<MyHomePage> {
     } catch (e) {
       print('Error decrypting "$path": "$e"');
     }
+  }
+
+  void _toggleEncryptionMode() {
+    setState(() {
+      _isEncryptMode = !_isEncryptMode;
+      if (!_isEncryptMode) {
+        _outputController.text = _aesEncryptor.encryptStringAsBase64(_inputController.text);
+        _inputController.text = "";
+      } else {
+        _inputController.text = _aesEncryptor.decryptStringFromBase64(_outputController.text);
+        _outputController.text = "";
+      }
+    });
   }
 }
