@@ -31,9 +31,24 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   //* for the drawer
-  final DrawerItemBuilder _drawerItemProvider = DrawerItemBuilder();
+  late DrawerItemBuilder _drawerItemProvider;
   int _selectedDrawerIndex = 0;
   String appBarText = "";
+  void _onDrawerItemTapped(ChildItem childItem) {
+    setState(() {
+      _selectedDrawerIndex = childItem.index;
+      appBarText = childItem.title;
+    });
+    Navigator.pop(context); // close drawer
+  }
+
+  //* build methods
+
+  @override
+  void initState() {
+    _drawerItemProvider = DrawerItemBuilder(onItemTapped: _onDrawerItemTapped);
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,26 +57,7 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(appBarText),
       ),
       drawer: Drawer(
-        child: ListView(
-          children: [
-            for (var index = 0; index < _drawerItemProvider.getDrawerItems.length; index++)
-              ListTile(
-                leading: Icon(_drawerItemProvider.getDrawerItems[index].icon),
-                title: Text(
-                  _drawerItemProvider.getDrawerItems[index].title,
-                  style: Theme.of(context).textTheme.titleLarge!.copyWith(color: Theme.of(context).colorScheme.onSecondaryContainer),
-                ),
-                selected: index == _selectedDrawerIndex,
-                onTap: () {
-                  setState(() {
-                    _selectedDrawerIndex = index;
-                    appBarText = _drawerItemProvider.getDrawerItems[index].title;
-                  });
-                  Navigator.pop(context); // close drawer
-                },
-              ),
-          ],
-        ),
+        child: _drawerItemProvider.generateList(),
       ),
       body: _drawerItemProvider.getDrawerItemWidget(_selectedDrawerIndex),
     );

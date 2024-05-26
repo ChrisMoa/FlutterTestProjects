@@ -1,48 +1,140 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter/material.dart';
 import 'package:widgets_test_1/custom_widgets/custom_column_widget_template.dart';
 import 'package:widgets_test_1/custom_widgets/custom_row_widget_template.dart';
+import 'package:widgets_test_1/custom_widgets/tree_view_screen.dart';
 
-class DrawerItem {
-  String title;
-  IconData icon;
-  DrawerItem(this.title, this.icon);
-}
-
+/// this class defines the different drawer items
+///! add the different drawer items here
 class DrawerItemBuilder {
-  // Liste der Drawer-Einträge
-  final List<DrawerItem> _drawerItems = [
-    DrawerItem("CustomColumnWidgetTemplate", Icons.home),
-    DrawerItem("CustomRowWidgetTemplate", Icons.settings),
-    // DrawerItem("Calendar", Icons.calendar_month),
-    // DrawerItem("Wizard", Icons.add_to_photos_rounded),
-    // DrawerItem("Notes Overview", Icons.account_balance_wallet_sharp),
-    // DrawerItem("Datasynchronization", Icons.cloud_upload),
-    // DrawerItem("About", Icons.info_outline),
-  ];
-  List<DrawerItem> get getDrawerItems => _drawerItems;
+  late List<HeaderItem> items;
+  final Function(ChildItem childItem) onItemTapped;
+
+  DrawerItemBuilder({required this.onItemTapped}) {
+    items = [
+      HeaderItem(
+        title: 'Container Tests',
+        children: [
+          ChildItem(
+            title: "CustomColumnWidgetTemplate",
+            icon: Icons.home,
+            onClickWidget: const CustomColumnWidgetTemplate(),
+          ),
+          ChildItem(
+            title: "CustomRowWidgetTemplate",
+            icon: Icons.settings,
+            onClickWidget: const CustomRowWidgetTemplate(),
+          ),
+          ChildItem(
+            title: "CustomRowWidgetTemplate",
+            icon: Icons.settings,
+            onClickWidget: TreeViewScreen(),
+          ),
+        ],
+      ),
+      HeaderItem(
+        title: 'Test Header',
+        children: [
+          ChildItem(
+            title: "TestItem1",
+            icon: Icons.settings,
+            onClickWidget: const Text("TestItem"),
+          ),
+          ChildItem(
+            title: "TestItem2",
+            icon: Icons.view_list_outlined,
+            onClickWidget: const Text("TestItem"),
+          ),
+        ],
+      ),
+    ];
+
+    // write the index to every element
+    int index = 0;
+    for (var header in items) {
+      for (var childItem in header.children) {
+        childItem.index = index;
+        index++;
+      }
+    }
+  }
 
   // Funktion, um die Haupt-Inhaltsseite basierend auf dem ausgewählten Eintrag anzuzeigen
   getDrawerItemWidget(int index) {
-    switch (index) {
-      case 0:
-        return const CustomColumnWidgetTemplate();
-      case 1:
-        return const CustomRowWidgetTemplate();
-      // case 1:
-      //   return const SettingsPage();
-      // case 2:
-      //   return const CalendarPage();
-      // case 3:
-      //   return const NoteWizardPage();
-      // case 4:
-      //   return const NotesOverViewPage();
-      // case 5:
-      //   return const SynchronizePage();
-      // case 6:
-      //   return const AboutPage();
+    return items.expand((header) => header.children).firstWhere((childItem) => childItem.index == index).onClickWidget;
+  }
 
-      default:
-        return const Text("Fehler: Ungültiger Eintrag");
-    }
+  Widget generateList() {
+    return ListView.builder(
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        return HeaderWidget(
+          header: items[index],
+          onItemTapped: onItemTapped,
+        );
+      },
+    );
+  }
+}
+
+class ChildItem {
+  String title;
+  IconData icon;
+  Widget onClickWidget;
+  int index;
+
+  ChildItem({required this.title, required this.icon, required this.onClickWidget, this.index = 0});
+}
+
+class HeaderItem {
+  String title;
+  List<ChildItem> children;
+
+  HeaderItem({required this.title, required this.children});
+}
+
+class HeaderWidget extends StatelessWidget {
+  final HeaderItem header;
+  final Function(ChildItem childItem) onItemTapped;
+
+  const HeaderWidget({
+    super.key,
+    required this.header,
+    required this.onItemTapped,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(10.0),
+          color: Theme.of(context).colorScheme.secondaryContainer,
+          child: Text(
+            header.title,
+            style: Theme.of(context).textTheme.titleMedium!.copyWith(color: Theme.of(context).colorScheme.onSecondaryContainer),
+          ),
+        ),
+        ...header.children.map(
+          (childItem) {
+            return Padding(
+              padding: const EdgeInsets.only(left: 32.0, top: 2.0, bottom: 2.0),
+              child: ListTile(
+                onTap: () {
+                  onItemTapped(childItem);
+                },
+                title: Text(
+                  childItem.title,
+                  style: Theme.of(context).textTheme.titleSmall!.copyWith(color: Theme.of(context).colorScheme.onSecondaryContainer),
+                ),
+                leading: Icon(childItem.icon),
+              ),
+            );
+          },
+        ),
+      ],
+    );
   }
 }
