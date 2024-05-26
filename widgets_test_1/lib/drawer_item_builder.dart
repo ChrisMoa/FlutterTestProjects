@@ -1,8 +1,9 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter/material.dart';
-import 'package:widgets_test_1/custom_widgets/custom_column_widget_template.dart';
-import 'package:widgets_test_1/custom_widgets/custom_row_widget_template.dart';
-import 'package:widgets_test_1/custom_widgets/tree_view_screen.dart';
+import 'package:widgets_test_1/custom_container/custom_column_widget_template.dart';
+import 'package:widgets_test_1/custom_container/custom_row_widget_template.dart';
+import 'package:widgets_test_1/custom_container/tree_view_screen.dart';
+import 'package:widgets_test_1/custom_widgets/basic_card.dart';
 
 /// this class defines the different drawer items
 ///! add the different drawer items here
@@ -29,6 +30,16 @@ class DrawerItemBuilder {
             title: "CustomRowWidgetTemplate",
             icon: Icons.settings,
             onClickWidget: TreeViewScreen(),
+          ),
+        ],
+      ),
+      HeaderItem(
+        title: 'Cards',
+        children: [
+          ChildItem(
+            title: "Card1",
+            icon: Icons.settings,
+            onClickWidget: const BasicCard(),
           ),
         ],
       ),
