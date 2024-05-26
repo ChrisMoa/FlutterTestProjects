@@ -37,14 +37,11 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   bool _asyncRead = false; //! a bool that states if the async is already read
-  final _sharedPreferenceStorage =
-      const FlutterSecureStorage(); //! the secure storage
-  Map<String, String> _storageContent =
-      {}; //! contains a global map of all stored parameters
+  final _sharedPreferenceStorage = const FlutterSecureStorage(); //! the secure storage
+  Map<String, String> _storageContent = {}; //! contains a global map of all stored parameters
   late Directory _rootDirectory; //! the root directory of the dialog
   late AesEncryptor _aesEncryptor; //! the aes encryption module
-  final String _examplePW =
-      '1234'; //! this is only an example password, should be applied in testing purposes
+  final String _examplePW = '1234'; //! this is only an example password, should be applied in testing purposes
 
   //* WidgetBase -------------------------------------------------------------------------------------------------------------------------------------
   @override
@@ -130,8 +127,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void _onInitAsync() async {
     _storageContent = await _sharedPreferenceStorage.readAll();
     _rootDirectory = await getApplicationDocumentsDirectory();
-    if (!_storageContent.containsKey('password') ||
-        !_storageContent.containsKey('iv')) {
+    if (!_storageContent.containsKey('password') || !_storageContent.containsKey('iv')) {
       print('creates new aesEncryptor');
       _aesEncryptor = AesEncryptor(password: _examplePW);
       _storageContent['password'] = _aesEncryptor.password;
