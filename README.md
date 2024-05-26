@@ -1,2 +1,2 @@
-# EncryptionTest
-A test for different encryption technics 
+# Description
+A test project for flutter
