@@ -4,6 +4,7 @@ import 'package:widgets_test_1/custom_container/custom_column_widget_template.da
 import 'package:widgets_test_1/custom_container/custom_row_widget_template.dart';
 import 'package:widgets_test_1/custom_container/tree_view_screen.dart';
 import 'package:widgets_test_1/custom_widgets/basic_card.dart';
+import 'package:widgets_test_1/custom_widgets/simple_class_overview_list.dart';
 
 /// this class defines the different drawer items
 ///! add the different drawer items here
@@ -30,6 +31,11 @@ class DrawerItemBuilder {
             title: "CustomRowWidgetTemplate",
             icon: Icons.settings,
             onClickWidget: TreeViewScreen(),
+          ),
+          ChildItem(
+            title: "SimpleListTemplate",
+            icon: Icons.list_outlined,
+            onClickWidget: const OverviewList(),
           ),
         ],
       ),
