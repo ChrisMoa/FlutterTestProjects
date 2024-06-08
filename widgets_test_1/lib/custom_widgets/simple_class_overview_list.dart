@@ -139,22 +139,45 @@ class _OverviewListState extends ConsumerState<OverviewList> {
       return ListView.builder(
         itemBuilder: (ctx, index) => Padding(
           padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
-          child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.onPrimary,
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.inversePrimary,
-                  width: 1.0,
-                  style: BorderStyle.solid,
+          child: Dismissible(
+            key: ValueKey(list[index]),
+            onDismissed: (direction) {
+              _onRemoveListItem(list[index]);
+            },
+            child: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.onPrimary,
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.inversePrimary,
+                    width: 1.0,
+                    style: BorderStyle.solid,
+                  ),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 15),
-              child: OverviewListItem(id: list[index].getPrimaryKey())),
+                padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 15),
+                child: OverviewListItem(id: list[index].getPrimaryKey())),
+          ),
         ),
         itemCount: list.length,
       );
     }
+  }
+
+  void _onRemoveListItem(TestUser testuser) {
+    ref.read(testuserListProvider.notifier).deleteElement(testuser);
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 3),
+        content: Text('${testuser.getPrimaryKey()} deleted!'),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () {
+            ref.read(testuserListProvider.notifier).addElement(testuser);
+          },
+        ),
+      ),
+    );
   }
 }
 
@@ -172,6 +195,8 @@ class _OverviewListItemState extends ConsumerState<OverviewListItem> {
   final TextEditingController _ageController = TextEditingController();
   final TextEditingController _daysController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
+
+  bool _checkBoxState = false;
 
   @override
   void dispose() {
@@ -289,14 +314,45 @@ class _OverviewListItemState extends ConsumerState<OverviewListItem> {
                         return null;
                       },
                     ),
-                    ElevatedButton(
-                      onPressed: () {
-                        notifier.triggerSaveList();
-                      },
-                      child: Text(
-                        "Hit me",
-                        style: Theme.of(context).textTheme.titleMedium!.copyWith(color: Theme.of(context).colorScheme.onSecondaryContainer),
+                    CheckboxListTile(
+                      title: Text(
+                        "Check! Mate?",
+                        style: Theme.of(context).textTheme.titleLarge!.copyWith(color: Theme.of(context).colorScheme.onPrimaryContainer),
                       ),
+                      secondary: Icon(
+                        Icons.ac_unit,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                      controlAffinity: ListTileControlAffinity.leading,
+                      value: _checkBoxState,
+                      onChanged: (value) {
+                        setState(() {
+                          _checkBoxState = !_checkBoxState;
+                        });
+                      },
+                    ),
+                    ButtonBar(
+                      buttonPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      children: [
+                        ElevatedButton(
+                          onPressed: () {
+                            notifier.triggerSaveList();
+                          },
+                          child: Text(
+                            "Hit me",
+                            style: Theme.of(context).textTheme.titleMedium!.copyWith(color: Theme.of(context).colorScheme.onSecondaryContainer),
+                          ),
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            notifier.triggerSaveList();
+                          },
+                          child: Text(
+                            "Hit me",
+                            style: Theme.of(context).textTheme.titleMedium!.copyWith(color: Theme.of(context).colorScheme.onSecondaryContainer),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

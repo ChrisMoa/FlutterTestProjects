@@ -4,7 +4,9 @@ import 'package:widgets_test_1/custom_container/custom_column_widget_template.da
 import 'package:widgets_test_1/custom_container/custom_row_widget_template.dart';
 import 'package:widgets_test_1/custom_container/tree_view_screen.dart';
 import 'package:widgets_test_1/custom_widgets/basic_card.dart';
+import 'package:widgets_test_1/custom_widgets/dropdown_menu_example_1.dart';
 import 'package:widgets_test_1/custom_widgets/simple_class_overview_list.dart';
+import 'package:widgets_test_1/custom_widgets/time_picker.dart';
 
 /// this class defines the different drawer items
 ///! add the different drawer items here
@@ -46,6 +48,24 @@ class DrawerItemBuilder {
             title: "Card1",
             icon: Icons.settings,
             onClickWidget: const BasicCard(),
+          ),
+          ChildItem(
+            title: "First Dropdown",
+            icon: Icons.settings,
+            onClickWidget: DropdownMenuExample(list: [
+              Item(name: 'Item 1', icon: Icons.star),
+              Item(name: 'Item 2', icon: Icons.favorite),
+              Item(name: 'Item 3', icon: Icons.thumb_up),
+            ]),
+          ),
+          ChildItem(
+            title: "Scrollable time picker",
+            icon: Icons.lock_clock,
+            onClickWidget: const TimePicker(
+              startHour: 12,
+              endHour: 22,
+              minuteStep: 5,
+            ),
           ),
         ],
       ),
